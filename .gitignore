@@ -1,3 +1,31 @@
+# Data from measurements
+data_sets/
+test_data/
+config_files/
+current_measurements/
+0_measurement.py
+analysis.py
+update_old_data_files.py
+analysis_time_dependence.py
+analyze_2d_scan.py
+analyze_extended_2d_scans.py
+test.py
+get_configuration.py
+fit_fields.py
+old_ time_resolved_meas_with_cube.py
+analysis_rotation.py
+analysis_correct_misalignment.py
+estimate_saturation_limits.py
+extract_linear_slopes.py
+test_interpolation.py
+spherical_plot_triangulation.py
+lookup_table_interpolation.py
+hysteresis_analysis.py
+plot_measurement_set_3d.py
+test_new_calibration.py
+oscilloscope.py
+estimate_derivatives.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
