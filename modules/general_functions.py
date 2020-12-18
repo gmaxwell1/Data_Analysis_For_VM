@@ -15,7 +15,7 @@ Date: 20.10.2020
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import serial
+# import serial
 from numpy.linalg import norm
 import os
 import sys
