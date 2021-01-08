@@ -1766,3 +1766,4 @@ def collectAndExtract(directory, B_min, remove_saturation = True,
 
     print(f'final shape of considered array: {B_measured.shape}')
     return currents, B_measured, B_expected
+    
