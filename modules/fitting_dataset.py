@@ -35,14 +35,6 @@ finally:
 
 
 #%%
-# estimate number of independent entries in partial derivative tensors, 
-# since symmetry of partial derivatives yields symmetric tensors
-k = 3
-print(binom(3+k-1, k))
-
-
-
-#%%
 def fit_data(xdata, ydata, degree):
     """ 
     Fit the provided data with a tri-linear or tri-quadratic polynomial and 

@@ -1678,7 +1678,10 @@ def evaluate_performance(measured, fitted):
     dot = np.array([np.dot(measured[i], fitted[i]) for i in range(len(measured))])
     norms_measured = np.linalg.norm(measured, axis=1)
     norms_fits = np.linalg.norm(fitted, axis=1)
-    alphas = np.degrees(np.arccos(dot / (norms_measured * norms_fits)))
+    # omit vectors with zero norm due to reasonability
+    mask = (norms_measured!=0) * (norms_fits!=0)
+    alphas = np.degrees(np.arccos(dot[mask] / (norms_measured[mask] * norms_fits[mask])))
+
 
     # print all measures
     print(f'RMS error fit: {RMSE:.2f} mT')
@@ -1763,3 +1766,4 @@ def collectAndExtract(directory, B_min, remove_saturation = True,
 
     print(f'final shape of considered array: {B_measured.shape}')
     return currents, B_measured, B_expected
+    
