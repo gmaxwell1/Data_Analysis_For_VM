@@ -15,11 +15,15 @@ for the three coils and the current ratios are estimated at the end.
 
 Author: Nicholas Meinhardt (QZabre)
         nmeinhar@student.ethz.ch
+Edited by Maxwell Guerne
+        gmaxwell at ethz.ch
         
 Date: 27.10.2020
+latest update: 06.01.2021
 """
 
 #%%
+# standard library imports
 import numpy as np
 import os
 import pandas as pd
@@ -27,6 +31,7 @@ from itertools import product, permutations
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+# local imports
 try:
     import transformations as tr
 except ModuleNotFoundError:
@@ -35,13 +40,13 @@ except ModuleNotFoundError:
     import transformations as tr
 finally:
     from modules.general_functions import ensure_dir_exists
-    from modules.interpolation_tools import delaunay_triangulation_spherical_surface, add_triangles_to_3dplot
     from modules.analysis_tools import get_phi, get_theta
+    from modules.interpolation_tools import delaunay_triangulation_spherical_surface, add_triangles_to_3dplot
 
 #%%
 # Part 1 --------------------------------------------------------
 # function definitions
-def generate_unique_combinations(num_vals):
+def generate_unique_combinations(num_vals, remove_negative=False):
     """
     Generate all possible cominations of current ratios (r1, r2, r3) between the three coils.
     The set of combinations fulfills fulfills following properties:
@@ -64,7 +69,7 @@ def generate_unique_combinations(num_vals):
     better do not use it for large values of num_vals.
     """
     # generate all configurations in raw numbers
-    generator_combinations = product([1], 
+    generator_combinations = product(np.linspace(-1,1, num=num_vals), 
                                     np.linspace(-1,1, num=num_vals), 
                                     np.linspace(-1,1, num=num_vals))
     raw_ratios = np.array(list(generator_combinations))
@@ -83,7 +88,8 @@ def generate_unique_combinations(num_vals):
             if np.all(unique_combinations[i] == -1*unique_combinations[j]):
                 # print('{},{}: {}, {}'.format(i,j, unique_combinations[i], unique_combinations[j]))
                 indices_equivalent_pairs.append(i)
-    unique_combinations = np.delete(unique_combinations, indices_equivalent_pairs, axis=0)
+    if remove_negative:
+        unique_combinations = np.delete(unique_combinations, indices_equivalent_pairs, axis=0)
 
     # reverse order for convenience to have 111 at the beginning 
     unique_combinations = np.flip(unique_combinations, axis=0)
@@ -153,7 +159,7 @@ def generate_configs_half_sphere(n_sectors, windings = 508, resistance = 0.47,
         latitudes[-1] -= elevation_factor_equator * (latitudes[-1] - latitudes[-2])
 
     # prepare lists to collect field vectors and current ratios
-    ratios = []
+    currents = []
     vectors = []
     thetas = []
     phis = []
@@ -177,15 +183,16 @@ def generate_configs_half_sphere(n_sectors, windings = 508, resistance = 0.47,
 
             # collect the ratios of the three currents, where at least one value has absolute value 1
             # and the current directions remain the same 
-            i_max = np.argmax(np.abs(I_coils))
-            ratios.append(I_coils / I_coils[i_max] * np.sign(I_coils[i_max]))
+            # i_max = np.argmax(np.abs(I_coils)) 
+            # / I_coils[i_max] * np.sign(I_coils[i_max])
+            currents.append(I_coils)
             vectors.append(B_vector)
 
             # collect angular configuration
             thetas.append(theta)
             phis.append(phi)
 
-    return np.array(ratios),  np.array(vectors), np.array(thetas), np.array(phis)
+    return np.array(currents), np.array(vectors), np.array(thetas), np.array(phis)
 
 def generate_test_points_whole_sphere(n_sectors, magnitude):
     """
@@ -202,13 +209,66 @@ def generate_test_points_whole_sphere(n_sectors, magnitude):
     to set n_sectors to multiples of 4.
     - magnitude (float): magnitude of vectors that are generated
     """
-    _, vectors_upper, _, _ = generate_configs_half_sphere(n_sectors, magnitude=magnitude, 
+    ratios1, vectors_upper, _, _ = generate_configs_half_sphere(n_sectors, magnitude=magnitude, 
                                         upper=True, include_equator=True)
-    _, vectors_lower, _, _ = generate_configs_half_sphere(n_sectors, magnitude=magnitude, 
+    ratios2, vectors_lower, _, _ = generate_configs_half_sphere(n_sectors, magnitude=magnitude, 
                                         upper=False, include_equator=False)
 
     # combine both hemispheres and return vectors
-    return np.append(vectors_upper, vectors_lower, axis=0)
+    return np.append(ratios1, ratios2, axis=0), np.append(vectors_upper, vectors_lower, axis=0)
+
+
+
+def rng_test_points_whole_sphere(N=10, magnitude_range=[0,50], theta_range=[0,np.pi], phi_range=[0,2*np.pi], seed=None):
+    """
+    Generate magnetic field vectors in in random directions and with random magnitudes. The angles
+    theta and phi follow a uniform distribution between 0 and pi or 0 and 2pi respectively (ranges can
+    be customized). The magnitudes follow a power distribution on a customizable interval.
+    The seed can be set to generate new but reproducible combinations of vectors.
+
+    Args:
+    - N (int >= 1): number of directions generated
+    - magnitude_range (list): magnitude of vectors that are generated are between the two specified numbers.
+    they are randomly distributed according to the 2nd order power distribution. P(x) = 3*x^2, for 0<x<=1
+    default: [0,50]
+    - theta_range (list): polar angle of vectors that are generated are between the two specified numbers.
+    they are randomly distributed according to the uniform distribution.
+    default: [0,np.pi]
+    - phi_range (list): azimuthal angle of vectors that are generated are between the two specified numbers.
+    they are randomly distributed according to the uniform distribution.
+    default: [0,2*np.pi]
+    - seed (int): A seed to initialize the `BitGenerator`. If None, then fresh, unpredictable entropy will 
+    be pulled from the OS. If an `int` or `array_like[ints]` is passed, then it will be passed to `SeedSequence`
+    to derive the initial `BitGenerator` state.
+    
+    Return: 
+    - vectors (ndarray of shape(N,3)): Array containing the Cartesian coordinates
+    of all considered vectors, posing a simple way for plotting of the latter
+    - B_magnitudes (ndarray of length N): Array containing the magnitudes of all considered
+    vectors, posing a simple way for plotting the latter
+    - thetas (ndarray of length N): Contains latitude angles theta of all vectors in radians
+    - phis (ndarray of length N): Contains longitude angles phi of all vectors in radians
+    """
+    #initialize random generator
+    rng = np.random.default_rng(seed)
+    
+    # prepare list to collect field vectors
+    vectors = []
+    # randomly generated vectors
+    B_magnitudes = magnitude_range[0] + rng.power(2, N) * (magnitude_range[1] - magnitude_range[0])
+    thetas = theta_range[0] + rng.random((N,)) * (theta_range[1] - theta_range[0])
+    phis = phi_range[0] + rng.random((N,)) * (phi_range[1] - phi_range[0])
+    
+    for i in range(N):
+        # estimate vector in Cartesian coordinates from angles
+        B_vector = B_magnitudes[i] * np.array([np.sin(thetas[i]) * np.cos(phis[i]),
+                                        np.sin(thetas[i]) * np.sin(phis[i]),
+                                        np.cos(thetas[i])])
+        
+        vectors.append(B_vector)
+
+    return np.array(vectors), np.array(B_magnitudes), np.array(thetas), np.array(phis)
+
 
 def plot_vectors(vectors, magnitude = 1, phis= None, thetas=None, add_tiangulation = False):
     """
@@ -247,7 +307,6 @@ def plot_vectors(vectors, magnitude = 1, phis= None, thetas=None, add_tiangulati
     ax.plot_surface(x, y, z, color='k', rstride=1, cstride=1,
                         alpha=0.05, antialiased=False, vmax=2)  
     
-    centers = []
     # plot all vectors as red dots
     ax.scatter(vectors[:,0], vectors[:,1], vectors[:,2], color='r')
     
@@ -277,70 +336,216 @@ def plot_vectors(vectors, magnitude = 1, phis= None, thetas=None, add_tiangulati
         return fig, ax
 
 
+def plot_vectors_simple(vectors, magnitudes = 1):
+    """
+    Generate and show 3d plot of sphere and the provided vectors.
+
+    Args:
+    - vectors (ndarray of shape(N, 3)): Contains normal vectors that should be plotted.
+    - magnitude (float/ndarray of shape(N,)): magnitude of each vector that is plotted.
+    """
+    # plot the generated vectors
+    # generate figure with 3d-axis
+    fig = plt.figure(figsize = 1.5*plt.figaspect(1.))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # plot arrows for x, y, z axis
+    length_axes = 50
+    ax.quiver(length_axes/2, 0, 0, length_axes, 0, 0, color='k',
+            arrow_length_ratio=0.1, pivot='tip', linewidth=1.)
+    ax.quiver(0, length_axes/2, 0, 0, length_axes, 0, color='k',
+            arrow_length_ratio=0.1, pivot='tip', linewidth=1.5)
+    ax.quiver(0, 0, length_axes/2, 0, 0, length_axes, color='k',
+            arrow_length_ratio=0.1, pivot='tip', linewidth=1.5)
+    ax.text(40, 0, 0, 'x')
+    ax.text(0, 40, 0, 'y')
+    ax.text(0, 0, 40, 'z')
+    
+    # plot all vectors as arrows
+    for index in range(len(vectors)):
+        ax.quiver(0, 0, 0, vectors[index, 0], vectors[index, 1], vectors[index, 2], length=magnitudes[index], color='C2',
+            arrow_length_ratio=0.1, pivot='tail', linewidth=0.9)
+    
+    
+ 
+    ax.set_xlabel('$B_x$ [mT]')
+    ax.set_ylabel('$B_y$ [mT]')
+    ax.set_zlabel('$B_z$ [mT]')
+    # ax.set_axis_off()
+    
+    ax.view_init(30, 45)
+
+    return fig, ax
+
+def generate_grid(max_value, points_per_dim, threshold_magnitude = np.inf):
+    """
+    Generate 3d rectangular grid with points_per_dim vertices per dimension, which 
+    are equally spaced in [-max_value, +max_value]. The order of the returned array
+    is such that neighboring vertices in the array are also neighbors in real space.
+
+    Notes:
+    - The origin is included if points_per_dim is odd and excluded if 
+    points_per_dim is even.
+    - max_value specifies the maximum value for each dimension. This means that
+    the points at the corners have a magnitude of sqrt(3)*max_value! 
+    - Depending on the valueof threshold_magnitude, the returned grid points
+    may represent a cube or the intersection of a cube with a ball. 
+
+    Args:
+    - max_value (float): maximum value along each dimension
+    - points_per_dim (int): Number of vertices along each dimension
+    - threshold_magnitude (float): Maximum magnitude that is allowed. Default is np.inf, 
+    meaning that the entire rectangular grid is returned. If a value is provided, 
+    only vectors with magnitudes below the threshold are added to the final array.
+
+    Returns: 
+    - grid_pts (ndarray of shape (points_per_dim**3, 3))
+    """
+    x = np.linspace(-max_value, max_value, points_per_dim)
+
+    xx, yy, zz = np.meshgrid(x,x,x)
+
+    below_thresh = np.sqrt(xx**2 + yy**2 + zz**2) <= threshold_magnitude
+
+    # initialize grid movement
+    grid_pts = []
+
+    for k in range(points_per_dim): # z-axis
+        if k % 2 == 0:
+            y_range = np.arange(points_per_dim)
+        else: 
+            y_range = np.flip(np.arange(points_per_dim))
+
+        for j in y_range: # y-axis
+
+            if (-1)**(k+j) == 1:
+                x_range = np.arange(points_per_dim)
+            else: 
+                x_range = np.flip(np.arange(points_per_dim))
+
+            for i in x_range: # x-axis
+
+                # only add a grid point if its magnitude is below the threshold
+                if below_thresh[i,j,k]:
+                    grid_pts.append([xx[i,j,k], yy[i,j,k], zz[i,j,k]])
+
+    grid_pts = np.array(grid_pts)
+    
+    return grid_pts
+
 
 #%%
 # Part 2 -----------------------------------------------------------
 # generate configurations based on equidistant current ratios 
 
-if __name__ == '__main__':
-    # set the number of values between (incl) -1 and 1 that should be considered 
-    num_vals = 2
+# if __name__ == '__main__':
+#     # set the number of values between (incl) -1 and 1 that should be considered 
+#     num_vals = 3
 
-    for num_vals in range(2,10):
-        # generate the set
-        unique_combinations = generate_unique_combinations(num_vals)
+#     # for num_vals in range(2,10):
+#         # generate the set
+#     unique_combinations = generate_unique_combinations(num_vals, remove_negative=False)
 
-        # save the combinations to csv file
-        directory = '../config_files'
-        
+#         # save the combinations to csv file
+#     directory = r'.\config_files'
 
+#     df = pd.DataFrame({ 'ratio coil 1': unique_combinations[:,0], 
+#                         'ratio coil 2': unique_combinations[:,1], 
+#                         'ratio coil 3': unique_combinations[:,2]})
 
-        df = pd.DataFrame({ 'ratio coil 1': unique_combinations[:,0], 
-                            'ratio coil 2': unique_combinations[:,1], 
-                            'ratio coil 3': unique_combinations[:,2]})
+#     output_file_name = 'configs_numvals{}_length{}.csv'.format(num_vals, len(unique_combinations))
+#     data_filepath = os.path.join(directory, output_file_name)
+#     df.to_csv(data_filepath, index=False, header=True)
 
-        output_file_name = 'configs_numvals{}_length{}.csv'.format(num_vals, len(unique_combinations))
-        data_filepath = os.path.join(directory, output_file_name)
-        df.to_csv(data_filepath, index=False, header=True)
-
-# %%
+# # %%
 # Part 3 -----------------------------------------------------------
 # generate configurations based on (approximately) equidistant 
 # magnetic fields in upper half plane
 
-if __name__ == '__main__':
-    # generate configurations
-    n_sectors = 16
-    elevation_factor_equator = 0.1
-    magnitude = 1
-    ratios, vectors,_,_ = generate_configs_half_sphere(n_sectors, magnitude=magnitude,
-                                        elevation_factor_equator = elevation_factor_equator)
+# if __name__ == '__main__':
+#     # generate configurations
+#     n_vectors = 5000
+#     magnitude_range = [0,70]
+#     seed = 1414
+#     vectors,magnitudes,thetas,phis = rng_test_points_whole_sphere(n_vectors, magnitude_range=magnitude_range, seed=seed)
 
-    # plot all considered vectors on a sphere 
-    plot_vectors(vectors, magnitude=magnitude)
+#     # plot all considered vectors on a sphere 
+#     plot_vectors(vectors,50)
+    
+#     plt.show()
 
-    print(len(vectors))
-
-    # save the combinations to csv file
-    # directory = '../config_files'
+#     thetas_deg = thetas * 180/np.pi
+#     phis_deg = phis * 180/np.pi
+#     # save the combinations to csv file
+#     directory = '../config_files/RNG_test_vectors'
         
-    # df = pd.DataFrame({ 'ratio coil 1': ratios[:,0], 
-    #                     'ratio coil 2': ratios[:,1], 
-    #                     'ratio coil 3': ratios[:,2]})
+#     df = pd.DataFrame({ 'B_x': vectors[:,0], 
+#                         'B_y': vectors[:,1], 
+#                         'B_z': vectors[:,2],
+#                         'B_mag': magnitudes,
+#                         'theta (deg)': thetas_deg,
+#                         'phi (deg)': phis_deg})
 
-    # output_file_name = 'configs_upperHemisphere_size{}.csv'.format(len(ratios))
-    # data_filepath = os.path.join(directory, output_file_name)
-    # df.to_csv(data_filepath, index=False, header=True)
+#     output_file_name = f'vectors_rng{seed}_{magnitude_range[0]}-{magnitude_range[1]}mT_size{len(vectors)}.csv'
+#     data_filepath = os.path.join(directory, output_file_name)
+#     df.to_csv(data_filepath, index=False, header=True)
 
 
 # %%
 if __name__ == '__main__':
-    # estimate approximate duration
-    duration_per_run = (3600 * 2 + 60* 18 + 40) / 88
+    
+    # generate grid points
+    max_value = 10
+    points_per_dim = 7
+    grid_pts = generate_grid(max_value, points_per_dim, threshold_magnitude=np.inf)
 
-    runs = [162, 252, 306, 365, 649]
-    for r in runs:
-        duration = r * duration_per_run
-        print('{} runs: {} h {} min {} s'.format(r, int(duration // 3600), 
-                                                    int( (duration % 3600)//60), 
-                                                    int(duration % 60)))
+    directory = '../config_files/grid/'
+    output_file_name = f'walk_on_grid_max{max_value}_PointsPerDim{points_per_dim}.csv'     
+    ensure_dir_exists(directory)
+    data_filepath = os.path.join(directory, output_file_name)
+    
+    df = pd.DataFrame({ 'x': grid_pts[:, 0], 
+                        'y': grid_pts[:, 1], 
+                        'z': grid_pts[:, 2]})
+        
+    df.to_csv(data_filepath, index=False, header=True)
+    
+    #field magnitudes
+    array = [1,3,5,7,10,15,20,25,30,35,40,45,50]
+    n_sectors = [20,20,20,16,16,16,16,16,16,16,16,16,16]
+    
+    ratios_all = np.ndarray((1,3))
+    vectors_all = np.ndarray((1,3))
+
+    # concatenate all generated vectors/configurations
+    for i, el in enumerate(array):
+        magnitude = el
+        ratios, vectors = generate_test_points_whole_sphere(n_sectors[i], magnitude)
+        if i == 0:
+            ratios_all = ratios
+            vectors_all = vectors
+        else:
+            ratios_all = np.append(ratios_all, ratios, axis=0)
+            vectors_all = np.append(vectors_all, vectors, axis=0)
+        plot_vectors(vectors)
+        plt.show()
+    # save the combinations to csv files
+    directory = r'.\config_files\uniform_vectors_various_magnitudes'
+    
+
+
+    df = pd.DataFrame({ 'ratio coil 1': ratios_all[:,0], 
+                        'ratio coil 2': ratios_all[:,1], 
+                        'ratio coil 3': ratios_all[:,2]})
+
+    output_file_name = f'configs_wholeSphere_magnitude_1-50mT_size{len(ratios_all)}.csv'
+    data_filepath = os.path.join(directory, output_file_name)
+    df.to_csv(data_filepath, index=False, header=True)
+    
+    df = pd.DataFrame({ 'field component x': vectors_all[:,0], 
+                        'field component y': vectors_all[:,1], 
+                        'field component z': vectors_all[:,2]})
+
+    output_file_name = f'expvectors_wholeSphere_magnitude_1-50mT_size{len(vectors_all)}.csv'
+    data_filepath = os.path.join(directory, output_file_name)
+    df.to_csv(data_filepath, index=False, header=True)

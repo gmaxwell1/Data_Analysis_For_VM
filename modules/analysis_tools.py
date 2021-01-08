@@ -24,7 +24,8 @@ from scipy.optimize import curve_fit
 from scipy.spatial.transform import Rotation as R
 
 from modules.general_functions import angle_wrt_z, inplane_angle_wrt_x
-from modules.interpolation_tools import find_start_of_saturation
+# from modules.interpolation_tools import find_start_of_saturation
+from modules.general_functions import estimate_RMS_error
 
 
 # %%
@@ -1000,7 +1001,6 @@ def abs_lin_and_const(x, x_kink, a):
     return np.abs(lin_and_const(x, x_kink, a))
 
 
-# %%
 def find_closest_measured_field(pos, field, a, b):
     """
     Return the measured magnetic field at the closest measurement position next to [a,b]
@@ -1200,7 +1200,7 @@ def plot_rotation_plane(I, mean_values, std_values, expected_values, distance = 
 
     Return: fig, axs
     """
-    # create a simple plot with as many axes as letters in plots_yaxis
+    # create figure
     fig, ax = plt.subplots()
     fig.set_size_inches(4, 4)
     
@@ -1660,15 +1660,6 @@ def get_relative_inplane_angles(fields, verbose=False):
     # convert to degrees before returning
     return np.degrees(angles)
 
-def estimate_RMS_error(x, y):
-    """
-    Estimate and return root mean square error between x and y.
-
-    Args: x,y (1d ndarrays): contain measured and predicted data
-    """
-    # print(x-y)
-    # print(np.mean(x-y))
-    return  np.sqrt(np.mean((x-y)**2))
 
 def evaluate_performance(measured, fitted):
     """
@@ -1690,7 +1681,7 @@ def evaluate_performance(measured, fitted):
     alphas = np.degrees(np.arccos(dot / (norms_measured * norms_fits)))
 
     # print all measures
-    print(f'RMS error fit: {RMSE:.5f} mT')
+    print(f'RMS error fit: {RMSE:.2f} mT')
     print('RMS angular error: {:.2f}°'.format(estimate_RMS_error(alphas, np.zeros_like(alphas))))
     print('mean angular error: {:.2f}°, std: {:.2f}°'.format(np.mean(alphas), np.std(alphas)))
     print('min / max angular error: {:.2f}° / {:.2f}°'.format(np.min(alphas), np.max(alphas)))
@@ -1746,8 +1737,8 @@ def collectAndExtract(directory, B_min, remove_saturation = True,
         # even though find_start_of_saturation offers the possibility to specify the considered component, 
         # keep the default stting, which detects the field component that has the greatest absolute field values. 
         # This should work fine for situations, where one component is dominating. 
-        # i_min, i_max = find_start_of_saturation(I, mean_data, std_data, fraction_cutoff=fraction_cutoff,
-        #                         fitting_fct = affine_fct)
+        i_min, i_max = find_start_of_saturation(I, mean_data, std_data, fraction_cutoff=fraction_cutoff,
+                                fitting_fct = affine_fct)
 
         # estimate field magnitudes
         magnitudes = np.linalg.norm(mean_data, axis=1)

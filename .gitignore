@@ -3,6 +3,7 @@ data_sets/
 test_data/
 config_files/
 current_measurements/
+plots/
 0_measurement.py
 analysis.py
 update_old_data_files.py
@@ -157,3 +158,6 @@ dmypy.json
 .pyre/
 
 .vscode/
+plots/grid_meas_0_interpolated_data_B_I2.png
+plots/grid_meas_0_interpolated_data_B_I3.png
+plots/grid_meas_0_interpolated_data_Bx_I1.png
