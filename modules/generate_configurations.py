@@ -33,16 +33,17 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # local imports
 try:
-    import transformations as tr
+    from modules.data_management import ensure_dir_exists
+    # import transformations as tr
 except ModuleNotFoundError:
     import sys
     sys.path.insert(1, os.path.join(sys.path[0], '..'))
-    import transformations as tr
+    # import transformations as tr
+    from modules.data_management import ensure_dir_exists
 finally:
-    from modules.general_functions import ensure_dir_exists
     from modules.analysis_tools import get_phi, get_theta
     from modules.interpolation_tools import delaunay_triangulation_spherical_surface, add_triangles_to_3dplot
-    from modules.fitting_dataset import *
+    from modules.fitting_tools import *
 
 #%%
 # Part 1 --------------------------------------------------------
@@ -594,11 +595,16 @@ if __name__ == '__main__':
         filepath_sweeps = f'./config_files/sweep_{sweep_axis_label}_{radius}mT_size{num}.csv'
         # df.to_csv(filepath_sweeps, index=False, header=True)
 
+
+#%%
+
+print(16**3)
+
 #%%
 # generate grid in correct order
 if __name__ == '__main__':
-    max_value = 10
-    points_per_dim = 7
+    max_value = 50
+    points_per_dim = 20
 
     grid_desired = np.zeros((points_per_dim, points_per_dim, points_per_dim,3))
     values = np.linspace(-max_value, max_value, points_per_dim)
@@ -614,10 +620,10 @@ if __name__ == '__main__':
     df = pd.DataFrame({ 'x': grid_desired[:, 0], 
                         'y': grid_desired[:, 1], 
                         'z': grid_desired[:, 2]})
-    directory = './config_files/grid/'
+    directory = '../config_files/grid/'
     output_file_name = f'grid_max{max_value}_PointsPerDim{points_per_dim}.csv'
     filepath = os.path.join(directory, output_file_name)
-    # df.to_csv(filepath, index=False, header=True)
+    df.to_csv(filepath, index=False, header=True)
 
 # %%
 # reorder previous measurements, where grid was created by only changing one index by 1 per step,

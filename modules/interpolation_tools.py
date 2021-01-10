@@ -12,7 +12,6 @@ Date: 09.11.2020
 #%%
 # standard library imports
 import numpy as np
-from numpy.linalg import norm
 import os
 from scipy.optimize import curve_fit
 from scipy.spatial import ConvexHull, SphericalVoronoi
@@ -25,6 +24,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from functools import reduce
 
 # local imports
+from modules.data_management import extract_raw_data_from_file
 from modules.analysis_tools import *
 
 #%%
