@@ -6,6 +6,7 @@ current_measurements/
 plots/
 predictions_on_test_set/
 fitting_parameters/deprecated_models/
+training_set/
 0_measurement.py
 analysis.py
 analysis_time_dependence.py
@@ -29,6 +30,8 @@ compare_regression_models.py
 demagnetization_effect_on_rotation.py
 repeatability_evaluation.py
 temperature_drift.py
+temperature_tracking.py
+generate_training_set.py
 
 
 # Byte-compiled / optimized / DLL files

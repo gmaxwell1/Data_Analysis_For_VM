@@ -181,7 +181,8 @@ def generate_configs_half_sphere(n_sectors, windings = 508, resistance = 0.47,
                                             np.cos(theta)])
 
             # estimate the corresponding currents using linear model
-            I_coils = tr.computeCoilCurrents(B_vector, windings, resistance)
+            # I_coils = tr.computeCoilCurrents(B_vector, windings, resistance)
+            I_coils = np.zeros(3)
 
             # collect the ratios of the three currents, where at least one value has absolute value 1
             # and the current directions remain the same 
@@ -597,10 +598,6 @@ if __name__ == '__main__':
 
 
 #%%
-
-print(16**3)
-
-#%%
 # generate grid in correct order
 if __name__ == '__main__':
     max_value = 50
@@ -696,8 +693,9 @@ if __name__ == '__main__':
 # plot measured grid points to check whether they are actually on a grid
 # data random measurement set 3
 if __name__ == '__main__':
-    data_filename = '21_01_08_08-20-13_grid_max30_PointsPerDim13_demag5A.csv'
-    data_filepath = os.path.join('./test_data/B_field_on_grid', data_filename)
+    data_filename = '21_01_06_15-53-19_field_meas_7x7x7_0-10mT_demag5A.csv'
+    data_dir = './test_data/B_field_on_grid'
+    data_filepath = os.path.join(data_dir, data_filename)
     _, B_measured, _, _ = extract_raw_data_from_file(data_filepath)
 
     # generate figure with 3d-axis
@@ -725,6 +723,11 @@ if __name__ == '__main__':
     ax.set_ylabel('$B_y$ [mT]')
     ax.set_zlabel('$B_z$ [mT]')
 
-    ax.view_init(30, 45)
+    ax.view_init(0, 90)
+
+    image_file_name = f'{os.path.splitext(data_filename)[0]}_3d_plot_y.png'
+    image_path = os.path.join(data_dir, image_file_name)
+    fig.savefig(image_path, dpi=300)
 
     plt.show()
+# %%
