@@ -7,6 +7,9 @@ plots/
 predictions_on_test_set/
 fitting_parameters/deprecated_models/
 training_set/
+test_sets/
+final_measurements/*/
+final_tests/
 0_measurement.py
 analysis.py
 analysis_time_dependence.py
@@ -32,6 +35,7 @@ repeatability_evaluation.py
 temperature_drift.py
 temperature_tracking.py
 generate_training_set.py
+generate_test_sets.py
 
 
 # Byte-compiled / optimized / DLL files

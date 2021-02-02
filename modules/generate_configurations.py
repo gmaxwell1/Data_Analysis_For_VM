@@ -460,38 +460,39 @@ def generate_grid(max_value, points_per_dim, threshold_magnitude = np.inf):
 #     data_filepath = os.path.join(directory, output_file_name)
 #     df.to_csv(data_filepath, index=False, header=True)
 
-# # %%
+# %%
 # Part 3 -----------------------------------------------------------
 # generate configurations based on (approximately) equidistant 
 # magnetic fields in upper half plane
 
-# if __name__ == '__main__':
-#     # generate configurations
-#     n_vectors = 5000
-#     magnitude_range = [0,50]
-#     seed = 1414
-#     vectors,magnitudes,thetas,phis = rng_test_points_whole_sphere(n_vectors, magnitude_range=magnitude_range, seed=seed)
+if __name__ == '__main__':
+    # generate configurations
+    n_vectors = 50
+    magnitude_range = [0,60]
+    seed = 999
+    vectors,magnitudes,thetas,phis = rng_test_points_whole_sphere(n_vectors, magnitude_range=magnitude_range, seed=seed)
 
-#     # plot all considered vectors on a sphere 
-#     plot_vectors(vectors,50)
+    # plot all considered vectors on a sphere 
+    plot_vectors(vectors, 50)
     
-#     plt.show()
+    plt.show()
 
-#     thetas_deg = thetas * 180/np.pi
-#     phis_deg = phis * 180/np.pi
-#     # save the combinations to csv file
-#     directory = '../config_files/RNG_test_vectors'
+    thetas_deg = thetas * 180/np.pi
+    phis_deg = phis * 180/np.pi
+    # save the combinations to csv file
+    # directory = '../config_files/RNG_test_vectors'
+    directory = '../test_sets'
         
-#     df = pd.DataFrame({ 'B_x': vectors[:,0], 
-#                         'B_y': vectors[:,1], 
-#                         'B_z': vectors[:,2],
-#                         'B_mag': magnitudes,
-#                         'theta (deg)': thetas_deg,
-#                         'phi (deg)': phis_deg})
+    df = pd.DataFrame({ 'B_x': vectors[:,0], 
+                        'B_y': vectors[:,1], 
+                        'B_z': vectors[:,2],})
+                        # 'B_mag': magnitudes,
+                        # 'theta (deg)': thetas_deg,
+                        # 'phi (deg)': phis_deg})
 
-#     output_file_name = f'vectors_rng{seed}_{magnitude_range[0]}-{magnitude_range[1]}mT_size{len(vectors)}.csv'
-#     data_filepath = os.path.join(directory, output_file_name)
-#     # df.to_csv(data_filepath, index=False, header=True)
+    output_file_name = f'vectors_rng{seed}_{magnitude_range[0]}-{magnitude_range[1]}mT_size{len(vectors)}.csv'
+    data_filepath = os.path.join(directory, output_file_name)
+    df.to_csv(data_filepath, index=False, header=True)
 
 
 # %%
@@ -560,7 +561,7 @@ if __name__ == '__main__':
     # settings
     num = 100
     axes = np.arange(3)
-    radius = 50
+    radius = 10
 
     for ax in axes:
         # generate vectors for rotation
@@ -581,8 +582,8 @@ if __name__ == '__main__':
                             'By [mT]': test_vectors[:, 1], 
                             'Bz [mT]': test_vectors[:, 2]})
         rot_axis_label = ['x','y','z'][ax]
-        filepath_fields = f'./config_files/rotation_{rot_axis_label}_{radius}mT_size{num}.csv'
-        # df.to_csv(filepath_fields, index=False, header=True)
+        filepath_fields = f'../config_files/rotation_{rot_axis_label}_{radius}mT_size{num}.csv'
+        df.to_csv(filepath_fields, index=False, header=True)
 
         # generate vectors for sweeps along axes
         test_vectors = np.zeros((num, 3))
