@@ -28,7 +28,6 @@ oscilloscope.py
 estimate_derivatives.py
 fitting_stuff.py
 compare_training_sets.py
-evaluate_model_performance.py
 compare_regression_models.py
 demagnetization_effect_on_rotation.py
 repeatability_evaluation.py
