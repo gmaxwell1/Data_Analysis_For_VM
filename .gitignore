@@ -1,6 +1,5 @@
 # Data from measurements
 data_sets/
-test_data/
 config_files/
 current_measurements/
 plots/
@@ -10,11 +9,13 @@ training_set/
 test_sets/
 final_measurements/*/
 final_tests/
+measurements_field/
+measurements_currents/
+measurements_temperature/
 0_measurement.py
 analysis.py
 analysis_time_dependence.py
 analyze_2d_scan.py
-analyze_extended_2d_scans.py
 test_NNs.py
 analysis_rotation.py
 correct_for_misalignment.py
@@ -35,6 +36,7 @@ temperature_drift.py
 temperature_tracking.py
 generate_training_set.py
 generate_test_sets.py
+test_currents.py
 
 
 # Byte-compiled / optimized / DLL files
